@@ -1,4 +1,6 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -6,36 +8,90 @@ public class GameManager : MonoBehaviour
     public PlayerController[] players;
     public TargetSpawner spawner;
 
+    [Header("Victory UI")]
+    public GameObject victoryPanel;
+    public TMP_Text victoryMessageText;
+    public AudioClip victorySound;
+
+    [Header("Music Settings")] 
+    public AudioSource backgroundMusic;
+    public AudioClip gameMusic;
+    
     private GameObject currentTarget;
     private bool gameActive = true;
 
     private void Awake()
     {
-        if (instance == null)
-        {
-            instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
+        // Manejo de singleton modificado para permitir reinicio completo
+        if (instance != null && instance != this)
         {
             Destroy(gameObject);
             return;
         }
-
-        // Validación básica de componentes
-        if (players == null || players.Length == 0)
-            Debug.LogError("No players assigned in GameManager!");
-
-        if (spawner == null)
-            Debug.LogError("No spawner assigned in GameManager!");
+        
+        instance = this;
+        // Eliminado DontDestroyOnLoad para permitir reinicio completo
     }
 
     private void Start()
     {
-        if (gameActive)
+        InitializeGame();
+    }
+
+    private void InitializeGame()
+    {
+        victoryPanel.SetActive(false);
+        Time.timeScale = 1f;
+        gameActive = true;
+        
+        if (spawner != null)
         {
             spawner.SpawnNewObject();
         }
+        
+        PlayBackgroundMusic();
+    }
+
+    private void PlayBackgroundMusic()
+    {
+        if (backgroundMusic != null && gameMusic != null && !backgroundMusic.isPlaying)
+        {
+            backgroundMusic.clip = gameMusic;
+            backgroundMusic.loop = true;
+            backgroundMusic.Play();
+        }
+    }
+
+    private void StopBackgroundMusic()
+    {
+        if (backgroundMusic != null && backgroundMusic.isPlaying)
+        {
+            backgroundMusic.Stop();
+        }
+    }
+
+    public void PlayerWins(PlayerController winner)
+    {
+        if (!gameActive) return;
+
+        gameActive = false;
+        victoryPanel.SetActive(true);
+        victoryMessageText.text = $"GANADOR: {winner.hitKey.ToString().ToUpper()}";
+        
+        if (victorySound != null)
+            AudioSource.PlayClipAtPoint(victorySound, Camera.main.transform.position);
+        
+        StopBackgroundMusic();
+        Time.timeScale = 0f;
+    }
+
+    public void RestartGame()
+    {
+        // Destruye el GameManager actual antes de recargar
+        Destroy(gameObject);
+        
+        // Reinicia completamente la escena
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     public void SetCurrentTarget(GameObject target)
@@ -52,10 +108,9 @@ public class GameManager : MonoBehaviour
     {
         if (!gameActive) return;
 
-        // Jugador que golpeó gana
         hitter.PlayWinAnimation();
+        hitter.AddLogHit();
 
-        // Los demás jugadores pierden
         foreach (var player in players)
         {
             if (player != hitter)
@@ -63,7 +118,7 @@ public class GameManager : MonoBehaviour
         }
 
         DestroyCurrentObject();
-        spawner.LogWasHit(); // Notificar al spawner que el tronco fue golpeado
+        spawner.LogWasHit();
         Invoke("ResetPlayersToIdle", 1.5f);
     }
 
@@ -71,10 +126,8 @@ public class GameManager : MonoBehaviour
     {
         if (!gameActive) return;
 
-        // Jugador que golpeó pierde
         hitter.PlayLoseAnimation();
 
-        // Los demás jugadores ganan
         foreach (var player in players)
         {
             if (player != hitter)
@@ -90,7 +143,6 @@ public class GameManager : MonoBehaviour
     {
         if (!gameActive) return;
 
-        // Todos ganan cuando la bomba desaparece sola
         foreach (var player in players)
         {
             player.PlayWinAnimation();
@@ -118,12 +170,5 @@ public class GameManager : MonoBehaviour
                 player.EnableHit();
             }
         }
-    }
-
-    public void EndGame()
-    {
-        gameActive = false;
-        DestroyCurrentObject();
-        CancelInvoke();
     }
 }

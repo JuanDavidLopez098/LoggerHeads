@@ -1,28 +1,41 @@
+using TMPro;
 using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Player Settings")]
-    [Tooltip("Tecla para golpear (configurable por jugador)")]
     public KeyCode hitKey = KeyCode.Space;
     
     [Header("Components")]
-    [Tooltip("Animator del jugador (se auto-asigna si está en el mismo GameObject)")]
     public Animator animator;
-    [Tooltip("Collider del arma (opcional para detección de golpes)")]
     public Collider weaponCollider;
 
     [Header("Feedback")]
     [SerializeField] private ParticleSystem hitParticles;
     [SerializeField] private AudioClip hitSound;
+
+    [Header("Score")]
+    public TMP_Text scoreText;
+    public int logsHit = 0;
+    
+    [Header("Victory")]
+    public int winThreshold = 3;
+
+    // Sistema de voces
+    public enum CharacterGender { Male, Female }
+
+    [Header("Voice Settings")]
+    public CharacterGender gender = CharacterGender.Male;
+    public AudioClip[] victoryVoices;
+    public AudioClip[] defeatVoices;
+    [Range(0.1f, 1f)] public float voiceVolume = 0.7f;
     
     private bool canHit = true;
     private AudioSource audioSource;
 
     private void Awake()
     {
-        // Auto-asignar componentes si no están establecidos
         if (animator == null)
             animator = GetComponent<Animator>();
             
@@ -32,6 +45,11 @@ public class PlayerController : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
+    }
+
+    private void Start()
+    {
+        UpdateScoreText();
     }
 
     private void Update()
@@ -45,23 +63,36 @@ public class PlayerController : MonoBehaviour
     private void PerformHit()
     {
         canHit = false;
-        
-        // Activar animación
         animator.SetTrigger("Hit");
         
-        // Activar collider del arma (si existe)
         if (weaponCollider != null)
         {
             weaponCollider.enabled = true;
-            Invoke("DisableWeaponCollider", 0.2f); // Desactiva después de 0.2 segundos
+            Invoke("DisableWeaponCollider", 0.2f);
         }
         
-        // Feedback visual/auditivo
         if (hitParticles != null)
             hitParticles.Play();
             
         if (hitSound != null)
             audioSource.PlayOneShot(hitSound);
+    }
+
+    public void AddLogHit()
+    {
+        logsHit++;
+        UpdateScoreText();
+        
+        if(logsHit >= winThreshold)
+        {
+            GameManager.instance.PlayerWins(this);
+        }
+    }
+
+    public void UpdateScoreText()
+    {
+        if (scoreText != null)
+            scoreText.text = $"{hitKey}: {logsHit}";
     }
 
     private void DisableWeaponCollider()
@@ -78,11 +109,13 @@ public class PlayerController : MonoBehaviour
     public void PlayWinAnimation()
     {
         animator.SetTrigger("Win");
+        PlayRandomVoice(victoryVoices);
     }
 
     public void PlayLoseAnimation()
     {
         animator.SetTrigger("Lose");
+        PlayRandomVoice(defeatVoices);
     }
 
     public void PlayIdleAnimation()
@@ -90,9 +123,31 @@ public class PlayerController : MonoBehaviour
         animator.SetTrigger("Idle");
     }
 
-    // Método para cambiar la tecla dinámicamente (opcional)
     public void SetHitKey(KeyCode newKey)
     {
         hitKey = newKey;
+        UpdateScoreText();
+    }
+
+    private void PlayRandomVoice(AudioClip[] voiceClips)
+    {
+        if (voiceClips == null || voiceClips.Length == 0) return;
+
+        AudioClip randomVoice = voiceClips[Random.Range(0, voiceClips.Length)];
+        
+        GameObject voiceObject = new GameObject("TempVoice");
+        voiceObject.transform.position = transform.position;
+        AudioSource voiceSource = voiceObject.AddComponent<AudioSource>();
+        
+        voiceSource.clip = randomVoice;
+        voiceSource.volume = voiceVolume;
+        voiceSource.spatialBlend = 0.8f;
+        
+        voiceSource.pitch = gender == CharacterGender.Female ? 
+            Random.Range(1.1f, 1.3f) : 
+            Random.Range(0.9f, 1.1f);
+        
+        voiceSource.Play();
+        Destroy(voiceObject, randomVoice.length + 0.1f);
     }
 }
