@@ -105,6 +105,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   explosionSound: {fileID: 8300000, guid: 7c7624a4ff62bd641a76815f83967fa8, type: 3}
   explosionVolume: 1
+  explosionEffectPrefab: {fileID: 8194992990867289339, guid: 99bc28c0d45f51c4fbac01080b73edc7, type: 3}
 --- !u!135 &-6322192760227910142
 SphereCollider:
   m_ObjectHideFlags: 0

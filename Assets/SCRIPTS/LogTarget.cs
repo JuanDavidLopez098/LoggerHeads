@@ -7,6 +7,9 @@ public class LogTarget : MonoBehaviour
     [Range(0, 1)] public float hitVolume = 0.5f; // Control de volumen
     public float soundPitchVariation = 0.1f; // Variación de tono aleatoria
     
+    [Header("Visual Effect")]
+    public GameObject logHitEffectPrefab; // Efecto visual (asignar en el Inspector)
+
     private bool canBeHit = false;
     private bool wasHit = false;
     
@@ -30,6 +33,10 @@ public class LogTarget : MonoBehaviour
         {
             wasHit = true;
             PlayHitSound(); // Reproducir sonido antes de notificar al GameManager
+
+        if (logHitEffectPrefab != null)
+                Instantiate(logHitEffectPrefab, transform.position, Quaternion.identity); // EFECTO VISUAL
+                
             GameManager.instance.LogHit(player);
         }
     }

@@ -5,6 +5,9 @@ public class BombTarget : MonoBehaviour
     [Header("Sound Settings")]
     public AudioClip explosionSound; // Sonido de explosión (asignar en el Inspector)
     [Range(0, 1)] public float explosionVolume = 0.7f; // Control de volumen
+
+     [Header("Visual Effect")]
+    public GameObject explosionEffectPrefab; // Efecto visual (asignar en el Inspector)
     
     private bool canBeHit = false;
     private bool wasHit = false;
@@ -28,6 +31,10 @@ public class BombTarget : MonoBehaviour
         {
             wasHit = true;
             PlayExplosionSound(); // Reproducir sonido antes de notificar al GameManager
+
+        if (explosionEffectPrefab != null)
+                Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity); // EFECTO VISUAL
+    
             GameManager.instance.BombHit(player);
         }
     }

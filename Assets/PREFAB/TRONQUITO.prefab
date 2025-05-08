@@ -105,6 +105,7 @@ MonoBehaviour:
   hitSound: {fileID: 8300000, guid: 5fd2658c934b1cf4789feb0c59737783, type: 3}
   hitVolume: 0.8
   soundPitchVariation: 0.1
+  logHitEffectPrefab: {fileID: 8771972552311404799, guid: bbf9e36a48d6c5648a13889afab076fd, type: 3}
 --- !u!65 &6974701174310053714
 BoxCollider:
   m_ObjectHideFlags: 0
